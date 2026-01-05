@@ -1,0 +1,133 @@
+// prisma/schema.prisma - Versión corregida
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")  // Cambia esta línea por:
+  // url = "postgresql://postgres:sEJHAhszYHJOpPQMbCjtVwLgKvINbIGh@postgres.railway.internal:5432/railway?schema=public"
+}
+
+model Company {
+  id              String   @id @default(uuid())
+  name            String
+  logoUrl         String?
+  primaryColor    String   @default("#3B82F6")
+  secondaryColor  String   @default("#1E40AF")
+  currency        String   @default("COP")
+  timezone        String   @default("America/Bogota")
+  
+  // Relaciones - AGREGAR reminders
+  products        Product[]
+  clients         Client[]
+  subscriptions   Subscription[]
+  reminders       Reminder[]  // <-- AÑADIR ESTO
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  slug             String   @unique
+  name             String
+  description      String?
+  icon             String?
+  isActive         Boolean  @default(true)
+  basePriceMonthly Float
+  
+  company         Company  @relation(fields: [companyId], references: [id])
+  companyId       String
+  subscriptions   Subscription[]
+  
+  features        Json?    @default("[]")
+  createdAt       DateTime @default(now())
+}
+
+model Client {
+  id             String   @id @default(uuid())
+  businessName   String
+  contactName    String?
+  email          String
+  phone          String?
+  address        String?
+  city           String?
+  department     String?
+  latitude       Float?
+  longitude      Float?
+  notes          String?
+  status         String   @default("lead")
+  
+  company        Company  @relation(fields: [companyId], references: [id])
+  companyId      String
+  subscriptions  Subscription[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([email])
+  @@index([status])
+}
+
+model Subscription {
+  id                   String   @id @default(uuid())
+  client               Client   @relation(fields: [clientId], references: [id])
+  clientId             String
+  product              Product  @relation(fields: [productId], references: [id])
+  productId            String
+  company              Company  @relation(fields: [companyId], references: [id])
+  companyId            String
+  
+  instanceUrl          String?
+  instanceCredentials  Json?
+  priceMonthly         Float
+  billingDay           Int
+  status               String   @default("active")
+  startsAt             DateTime
+  endsAt               DateTime?
+  paymentMethod        String?
+  contractPdfUrl       String?
+  
+  payments             Payment[]
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([clientId])
+  @@index([status])
+}
+
+model Payment {
+  id              String   @id @default(uuid())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  String
+  
+  amount          Float
+  currency        String   @default("COP")
+  period          DateTime
+  paidAt          DateTime?
+  dueDate         DateTime
+  status          String   @default("pending")
+  receiptUrl      String?
+  notes           String?
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Reminder {
+  id              String   @id @default(uuid())
+  daysBefore      Int      @default(3)
+  templateSubject String?
+  templateBody    String?
+  isActive        Boolean  @default(true)
+  
+  company         Company  @relation(fields: [companyId], references: [id])
+  companyId       String
+  
+  createdAt       DateTime @default(now())
+}
