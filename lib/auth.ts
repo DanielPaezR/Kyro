@@ -1,11 +1,9 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
-import { prisma } from "./prisma"
-import { NextAuthOptions } from "next-auth"
+// lib/auth.ts - VERSIÓN COMPLETA Y CORRECTA
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -14,76 +12,51 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log('=== INICIO DEBUG LOGIN ===');
-        console.log('Email recibido:', credentials?.email);
-        console.log('Password recibido:', credentials?.password);
+        console.log("=== INICIO DEBUG LOGIN ===");
+        console.log("Email recibido:", credentials?.email);
+        console.log("Password recibido:", credentials?.password);
         
+        // 1. Validar que hay credenciales
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Credenciales incompletas');
+          console.log("❌ No hay credenciales");
           return null;
         }
 
-        try {
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
-          });
-
-          console.log('Usuario encontrado en DB:', user ? 'SÍ' : 'NO');
-          
-          if (!user) {
-            console.log('❌ Usuario no existe');
-            return null;
-          }
-
-          console.log('ID usuario:', user.id);
-          console.log('Password en DB:', user.password);
-          console.log('Tipo password:', typeof user.password);
-          console.log('Longitud password DB:', user.password?.length);
-
-          // DEBUG: Mostrar primeros y últimos caracteres
-          if (user.password) {
-            console.log('Primeros 10 chars:', user.password.substring(0, 10));
-            console.log('Últimos 10 chars:', user.password.substring(user.password.length - 10));
-          }
-
-          // Comparación EXACTA
-          const isExactMatch = credentials.password === user.password;
-          console.log('¿Coincidencia exacta?:', isExactMatch);
-          
-          // Comparación trim (por si hay espacios)
-          const isTrimMatch = credentials.password.trim() === user.password?.trim();
-          console.log('¿Coincidencia con trim?:', isTrimMatch);
-
-          // Verificar si hay espacios o saltos de línea
-          console.log('Password input char codes:', 
-            Array.from(credentials.password).map(c => c.charCodeAt(0)));
-          
-          if (user.password) {
-            console.log('Password DB char codes:', 
-              Array.from(user.password).map(c => c.charCodeAt(0)));
-          }
-
-          if (!user.password || credentials.password !== user.password) {
-            console.log('❌ Password no coincide');
-            console.log('Input:', JSON.stringify(credentials.password));
-            console.log('DB:', JSON.stringify(user.password));
-            return null;
-          }
-
-          console.log('✅ LOGIN EXITOSO');
-          console.log('=== FIN DEBUG LOGIN ===');
-          
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          };
-          
-        } catch (error) {
-          console.log('❌ Error en authorize:', error);
+        // 2. Verificar email CON variables de entorno
+        const adminEmail = process.env.ADMIN_EMAIL || "admin@kyro.com";
+        console.log("✅ Email configurado:", adminEmail);
+        
+        if (credentials.email !== adminEmail) {
+          console.log(`❌ Email incorrecto: ${credentials.email} vs ${adminEmail}`);
           return null;
         }
+
+        // 3. Obtener hash de las variables de entorno
+        const adminHash = process.env.ADMIN_PASSWORD_HASH;
+        console.log("✅ Hash cargado:", adminHash ? "SÍ" : "NO");
+        
+        if (!adminHash) {
+          console.error("❌ ERROR: ADMIN_PASSWORD_HASH no configurado");
+          return null;
+        }
+
+        // 4. Comparar contraseña SIN base de datos
+        const isValid = await bcrypt.compare(credentials.password, adminHash);
+        console.log("✅ Comparación bcrypt:", isValid ? "VÁLIDA" : "INVÁLIDA");
+        
+        if (!isValid) {
+          console.log("❌ Contraseña incorrecta");
+          return null;
+        }
+
+        // 5. Login exitoso
+        console.log(`✅ Login exitoso: ${credentials.email}`);
+        return {
+          id: "admin-kyro-001",
+          email: credentials.email,
+          name: "Administrador Kyro",
+          role: "admin"
+        };
       }
     })
   ],
@@ -97,18 +70,19 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
-        token.id = user.id
+        token.role = (user as any).role;
+        token.id = user.id;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as string
-        session.user.id = token.sub as string
+        (session.user as any).role = token.role;
+        (session.user as any).id = token.sub;
       }
-      return session
+      return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET
-}
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development"
+};
