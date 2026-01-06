@@ -2,18 +2,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { prisma } from "@/lib/prisma";
 
-// Fix para iconos de Leaflet en Next.js
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+// Carga Leaflet dinámicamente solo en cliente
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Popup),
+  { ssr: false }
+);
 
 // Tipos
 interface ClientLocation {
@@ -33,19 +41,21 @@ interface ClientLocation {
 export default function ClientsMapPage() {
   const [clients, setClients] = useState<ClientLocation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [center, setCenter] = useState<[number, number]>([4.5709, -74.2973]); // Bogotá
+  const [center, setCenter] = useState<[number, number]>([4.5709, -74.2973]);
   const [zoom, setZoom] = useState(6);
-  const [filter, setFilter] = useState("all"); // all, active, inactive, lead
+  const [filter, setFilter] = useState("all");
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   // Colores por estado
   const statusColors: Record<string, string> = {
-    active: "#10B981", // green
-    inactive: "#EF4444", // red
-    lead: "#F59E0B", // yellow
+    active: "#10B981",
+    inactive: "#EF4444",
+    lead: "#F59E0B",
   };
 
   useEffect(() => {
     fetchClients();
+    setMapLoaded(true);
   }, [filter]);
 
   const fetchClients = async () => {
@@ -55,7 +65,6 @@ export default function ClientsMapPage() {
         const data = await response.json();
         setClients(data);
         
-        // Centrar mapa en el primer cliente con coordenadas
         const clientWithCoords = data.find(
           (c: ClientLocation) => c.latitude && c.longitude
         );
@@ -79,32 +88,6 @@ export default function ClientsMapPage() {
   const clientsWithCoords = filteredClients.filter(
     (client) => client.latitude && client.longitude
   );
-
-  const CustomIcon = (status: string) => {
-    return L.divIcon({
-      html: `
-        <div style="
-          background-color: ${statusColors[status] || "#6B7280"};
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 10px;
-        ">
-          ${status.charAt(0).toUpperCase()}
-        </div>
-      `,
-      className: "",
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-  };
 
   if (loading) {
     return (
@@ -147,7 +130,6 @@ export default function ClientsMapPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Leyenda */}
         <div className="p-4 bg-gray-50 border-b">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
@@ -165,75 +147,76 @@ export default function ClientsMapPage() {
           </div>
         </div>
 
-        {/* Mapa */}
+        {/* Mapa - Solo se renderiza en cliente */}
         <div className="h-[600px] relative">
-          <MapContainer
-            center={center}
-            zoom={zoom}
-            style={{ height: "100%", width: "100%" }}
-            scrollWheelZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {clientsWithCoords.map((client) => (
-              <Marker
-                key={client.id}
-                position={[client.latitude!, client.longitude!]}
-                icon={CustomIcon(client.status)}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <h3 className="font-bold text-lg">{client.businessName}</h3>
-                    {client.contactName && (
-                      <p className="text-gray-700">{client.contactName}</p>
-                    )}
-                    <div className="mt-2 space-y-1">
-                      <p className="text-sm">
-                        <span className="font-medium">Email:</span> {client.email}
-                      </p>
-                      {client.phone && (
-                        <p className="text-sm">
-                          <span className="font-medium">Tel:</span> {client.phone}
-                        </p>
+          {mapLoaded && (
+            <MapContainer
+              center={center}
+              zoom={zoom}
+              style={{ height: "100%", width: "100%" }}
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              {clientsWithCoords.map((client) => (
+                <Marker
+                  key={client.id}
+                  position={[client.latitude!, client.longitude!]}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <h3 className="font-bold text-lg">{client.businessName}</h3>
+                      {client.contactName && (
+                        <p className="text-gray-700">{client.contactName}</p>
                       )}
-                      {client.address && (
+                      <div className="mt-2 space-y-1">
                         <p className="text-sm">
-                          <span className="font-medium">Dirección:</span> {client.address}
+                          <span className="font-medium">Email:</span> {client.email}
                         </p>
-                      )}
-                      <p className="text-sm">
-                        <span className="font-medium">Ciudad:</span> {client.city || "No especificada"}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-medium">Estado:</span>{" "}
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          client.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : client.status === "inactive"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {client.status === "active" ? "Activo" : 
-                           client.status === "inactive" ? "Inactivo" : "Lead"}
-                        </span>
-                      </p>
+                        {client.phone && (
+                          <p className="text-sm">
+                            <span className="font-medium">Tel:</span> {client.phone}
+                          </p>
+                        )}
+                        {client.address && (
+                          <p className="text-sm">
+                            <span className="font-medium">Dirección:</span> {client.address}
+                          </p>
+                        )}
+                        <p className="text-sm">
+                          <span className="font-medium">Ciudad:</span> {client.city || "No especificada"}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-medium">Estado:</span>{" "}
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            client.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : client.status === "inactive"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {client.status === "active" ? "Activo" : 
+                             client.status === "inactive" ? "Inactivo" : "Lead"}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-3 border-t">
+                        <a
+                          href={`/admin/clients/${client.id}`}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Ver detalles →
+                        </a>
+                      </div>
                     </div>
-                    <div className="mt-3 pt-3 border-t">
-                      <a
-                        href={`/admin/clients/${client.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                      >
-                        Ver detalles →
-                      </a>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          )}
         </div>
 
         {/* Lista de clientes sin coordenadas */}
