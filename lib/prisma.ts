@@ -1,21 +1,28 @@
-// lib/prisma.ts
+// lib/prisma.ts - VERSIÓN FINAL CORREGIDA
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// URL para producción en Railway (interna)
-const productionUrl = process.env.DATABASE_URL?.includes('railway.internal') 
-  ? process.env.DATABASE_URL
-  : process.env.DATABASE_URL?.replace(/@[^/]+/, '@postgres.railway.internal');
+// URL de Railway REAL
+const databaseUrl = process.env.DATABASE_URL || '';
+
+// DIAGNÓSTICO: Ver qué URL está recibiendo
+console.log('🔍 Prisma URL recibida:', databaseUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+
+// FIX: Si la URL contiene 'postgres.railway.internal', reemplazarla por la REAL
+let correctedUrl = databaseUrl;
+if (databaseUrl.includes('postgres.railway.internal')) {
+  // Tu URL REAL es: shinkansen.proxy.rlwy.net:48629
+  correctedUrl = 'postgresql://postgres:ydWczGeQRVImjZvvcnbSgklfCUnCJNse@shinkansen.proxy.rlwy.net:48629/railway';
+  console.log('🔧 URL corregida:', correctedUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+}
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   datasources: {
     db: {
-      url: process.env.NODE_ENV === 'production' 
-        ? productionUrl 
-        : process.env.DATABASE_URL,
+      url: correctedUrl,
     },
   },
 })
