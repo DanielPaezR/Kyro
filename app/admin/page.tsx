@@ -1,6 +1,9 @@
 import { prisma } from '../../lib/prisma'
 import Link from 'next/link'
 
+export const revalidate = 0  // No cache
+export const dynamic = 'force-dynamic'
+
 export default async function AdminPage() {
   const [clientsCount, subscriptionsCount, revenue] = await Promise.all([
     prisma.client.count(),
@@ -9,7 +12,7 @@ export default async function AdminPage() {
       _sum: { priceMonthly: true }
     })
   ])
-  
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
