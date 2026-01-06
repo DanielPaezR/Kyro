@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '../../lib/prisma'
 import Link from 'next/link'
 
 export default async function AdminPage() {
@@ -11,8 +11,8 @@ export default async function AdminPage() {
   ])
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-8">Panel de Administración Kyro</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 className="text-3xl font-bold mb-8">Dashboard Kyro</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
@@ -62,6 +62,12 @@ export default async function AdminPage() {
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
           >
             📍 Ver Mapa de Clientes
+          </Link>
+          <Link 
+            href="/admin/products" 
+            className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+          >
+            📦 Gestionar Productos
           </Link>
         </div>
       </div>

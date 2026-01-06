@@ -1,14 +1,13 @@
-// prisma/schema.prisma - Versión corregida
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")  // Cambia esta línea por:
-  // url = "postgresql://postgres:sEJHAhszYHJOpPQMbCjtVwLgKvINbIGh@postgres.railway.internal:5432/railway?schema=public"
+  url      = env("DATABASE_URL")
 }
 
+// Empresa dueña (tú)
 model Company {
   id              String   @id @default(uuid())
   name            String
@@ -18,16 +17,19 @@ model Company {
   currency        String   @default("COP")
   timezone        String   @default("America/Bogota")
   
-  // Relaciones - AGREGAR reminders
+  // Relaciones
   products        Product[]
   clients         Client[]
   subscriptions   Subscription[]
-  reminders       Reminder[]  // <-- AÑADIR ESTO
+  reminders       Reminder[]
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  @@map("companies")
 }
 
+// Productos disponibles
 model Product {
   id               String   @id @default(uuid())
   slug             String   @unique
@@ -43,8 +45,11 @@ model Product {
   
   features        Json?    @default("[]")
   createdAt       DateTime @default(now())
+  
+  @@map("products")
 }
 
+// Clientes (negocios que compran)
 model Client {
   id             String   @id @default(uuid())
   businessName   String
@@ -68,8 +73,10 @@ model Client {
   
   @@index([email])
   @@index([status])
+  @@map("clients")
 }
 
+// Suscripciones
 model Subscription {
   id                   String   @id @default(uuid())
   client               Client   @relation(fields: [clientId], references: [id])
@@ -96,8 +103,10 @@ model Subscription {
   
   @@index([clientId])
   @@index([status])
+  @@map("subscriptions")
 }
 
+// Pagos
 model Payment {
   id              String   @id @default(uuid())
   subscription    Subscription @relation(fields: [subscriptionId], references: [id])
@@ -117,8 +126,10 @@ model Payment {
   @@index([subscriptionId])
   @@index([status])
   @@index([dueDate])
+  @@map("payments")
 }
 
+// Recordatorios
 model Reminder {
   id              String   @id @default(uuid())
   daysBefore      Int      @default(3)
@@ -130,4 +141,64 @@ model Reminder {
   companyId       String
   
   createdAt       DateTime @default(now())
+  
+  @@map("reminders")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?   @db.Text
+  access_token      String?   @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?   @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Añadimos campo para auth con credenciales
+  role          String    @default("user")
+  
+  accounts      Account[]
+  sessions      Session[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
