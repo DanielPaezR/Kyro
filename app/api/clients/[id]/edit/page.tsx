@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import ClientForm from '@/app/components/client-form'
+import ClientForm from '@/components/client-form'
 
 export const dynamic = 'force-dynamic'
 
