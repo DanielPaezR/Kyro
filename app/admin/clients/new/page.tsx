@@ -15,6 +15,8 @@ export default function NewClientPage() {
     address: "",
     city: "",
     department: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     status: "lead", // lead, active, inactive
   });
 
@@ -119,6 +121,36 @@ export default function NewClientPage() {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Latitud (opcional)
+              </label>
+              <input
+                type="number"
+                step="any"
+                name="latitude"
+                value={form.latitude || ""}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ej: 4.5709"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Longitud (opcional)
+              </label>
+              <input
+                type="number"
+                step="any"
+                name="longitude"
+                value={form.longitude || ""}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Ej: -74.2973"
+              />
+            </div>
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">

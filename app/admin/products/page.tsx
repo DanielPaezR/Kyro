@@ -86,12 +86,17 @@ export default async function ProductsPage() {
               )}
 
               <div className="mt-6 flex justify-between">
-                <Link
-                  href={`/admin/products/${product.id}`}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  Editar
-                </Link>
+                <div className="flex gap-3">
+                  <Link
+                    href={`/admin/products/${product.id}/edit`}
+                    className="text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Editar
+                  </Link>
+                  <button className="text-red-600 hover:text-red-800 font-medium">
+                    Eliminar
+                  </button>
+                </div>
                 <span className="text-gray-500 text-sm">
                   Creado: {new Date(product.createdAt).toLocaleDateString()}
                 </span>
