@@ -114,8 +114,7 @@ async function main() {
     console.log('🎉 Seed completado exitosamente!')
     
   } catch (error) {
-    console.error('❌ Error durante el seed:', error.message)
-    if (error.code) console.error('Código error:', error.code)
+    console.error('❌ Error durante el seed:', error instanceof Error ? error.message : String(error))
   }
 }
 
