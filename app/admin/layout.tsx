@@ -1,68 +1,83 @@
-// app/admin/layout.tsx
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import Link from "next/link";
-import "../globals.css";
+// app/admin/layout.tsx - VERSIÓN CON LOGOUT FUNCIONAL
+'use client';
 
-const inter = Inter({ subsets: ["latin"] });
+import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: "Kyro Platform - Admin",
-  description: "Panel de administración Kyro Platform",
-};
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function AdminLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/admin/login');
+    } else if (status === 'authenticated') {
+      setIsLoading(false);
+    }
+  }, [status, router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ redirect: false });
+      router.push('/admin/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen">
-      {/* Sidebar/Navbar */}
-      <nav className="bg-white shadow-md">
+    <div className="min-h-screen bg-gray-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <Link href="/admin" className="text-xl font-bold text-blue-600">
-                  Kyro Admin
-                </Link>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Link
-                  href="/admin"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
+            <div className="flex items-center">
+              <Link href="/admin" className="text-xl font-bold text-gray-800">
+                Kyro Platform
+              </Link>
+              <div className="hidden md:ml-10 md:flex md:space-x-8">
+                <Link href="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2">
                   Dashboard
                 </Link>
-                <Link
-                  href="/admin/clients"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
+                <Link href="/admin/clients" className="text-gray-700 hover:text-blue-600 px-3 py-2">
                   Clientes
                 </Link>
-                <Link
-                  href="/admin/products"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Productos
+                <Link href="/admin/subscriptions" className="text-gray-700 hover:text-blue-600 px-3 py-2">
+                  Suscripciones
                 </Link>
-                <Link
-                  href="/admin/payments"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
+                <Link href="/admin/payments" className="text-gray-700 hover:text-blue-600 px-3 py-2">
                   Pagos
                 </Link>
-                <Link
-                  href="/admin/map"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Mapa
+                <Link href="/admin/products" className="text-gray-700 hover:text-blue-600 px-3 py-2">
+                  Productos
                 </Link>
               </div>
             </div>
-            <div className="flex items-center">
-              <button className="text-gray-500 hover:text-gray-700">
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">
+                {session?.user?.name || session?.user?.email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Cerrar Sesión
               </button>
             </div>
@@ -70,11 +85,9 @@ export default function AdminLayout({
         </div>
       </nav>
 
-      {/* Main content */}
-      <main className="py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {children}
-        </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {children}
       </main>
     </div>
   );

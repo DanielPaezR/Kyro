@@ -36,6 +36,7 @@ model Product {
   name             String
   description      String?
   icon             String?
+  demoUrl          String?  
   isActive         Boolean  @default(true)
   basePriceMonthly Float
   
