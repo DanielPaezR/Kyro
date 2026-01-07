@@ -1,6 +1,17 @@
-// app/api/public/products/route.ts - VERSIÓN CORREGIDA
+// app/api/public/products/route.ts - VERSIÓN CON TIPO MANUAL
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
+// Tipo manual para los productos públicos
+type PublicProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  demoUrl: string | null;
+  icon: string | null;
+  features: any;
+  basePriceMonthly?: number;
+};
 
 export async function GET() {
   try {
@@ -13,15 +24,15 @@ export async function GET() {
         id: true,
         name: true,
         description: true,
-        demoUrl: true,       // ✅ Ahora sí existe
+        demoUrl: true,
         icon: true,
         features: true,
-        basePriceMonthly: true, // Puedes agregar este si lo necesitas
+        basePriceMonthly: true,
       },
       orderBy: {
         name: 'asc',
       },
-    });
+    }) as unknown as PublicProduct[]; // 👈 Cast manual
 
     return NextResponse.json(products);
   } catch (error) {
