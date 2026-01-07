@@ -1,17 +1,19 @@
-// app/admin/page.tsx
+// app/admin/page.tsx - VERSIÓN ACTUALIZADA
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  // Obtener estadísticas
+  // Obtener estadísticas CORRECTAS
   const [
     totalClients,
     totalProducts,
     activeSubscriptions,
     recentPayments,
-    monthlyRevenue
+    monthlyRevenue,
+    pendingPayments,
+    paidPayments
   ] = await Promise.all([
     prisma.client.count(),
     prisma.product.count(),
@@ -28,25 +30,60 @@ export default async function AdminDashboard() {
             product: { select: { name: true } }
           }
         }
+      },
+      where: {
+        status: 'paid' // Solo mostrar pagos completados en recientes
       }
     }),
+    // Ingresos del mes (solo pagados)
     prisma.payment.aggregate({
       _sum: { amount: true },
       where: {
-        createdAt: {
+        status: 'paid',
+        paidAt: {
+          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+        }
+      }
+    }),
+    // Pagos pendientes
+    prisma.payment.count({
+      where: { 
+        status: 'pending',
+        dueDate: {
+          gte: new Date() // Solo pendientes futuros
+        }
+      }
+    }),
+    // Pagos pagados este mes
+    prisma.payment.count({
+      where: {
+        status: 'paid',
+        paidAt: {
           gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
         }
       }
     })
   ]);
 
+  // Calcular pagos vencidos
+  const overduePayments = await prisma.payment.count({
+    where: {
+      status: 'pending',
+      dueDate: {
+        lt: new Date() // Vencidos (fecha pasada)
+      }
+    }
+  });
+
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
       <p className="text-gray-600 mb-8">Bienvenido al panel de administración de Kyro Platform</p>
 
-      {/* Stats Grid */}
+      {/* Stats Grid Mejorada */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Clientes Totales */}
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
@@ -64,6 +101,7 @@ export default async function AdminDashboard() {
           </Link>
         </div>
 
+        {/* Productos Activos */}
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
@@ -81,6 +119,7 @@ export default async function AdminDashboard() {
           </Link>
         </div>
 
+        {/* Suscripciones Activas */}
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
           <div className="flex items-center justify-between">
             <div>
@@ -93,17 +132,21 @@ export default async function AdminDashboard() {
               </svg>
             </div>
           </div>
-          <Link href="/admin/payments" className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-4 block">
+          <Link href="/admin/subscriptions" className="text-purple-600 hover:text-purple-800 text-sm font-medium mt-4 block">
             Ver suscripciones →
           </Link>
         </div>
 
+        {/* Ingresos del Mes */}
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Ingresos del Mes</p>
               <p className="text-2xl font-bold text-gray-900">
                 ${monthlyRevenue._sum.amount?.toFixed(2) || "0.00"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {paidPayments} pagos registrados
               </p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-full">
@@ -118,7 +161,58 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Segunda fila de estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Pagos Pendientes */}
+        <div className="bg-white p-6 rounded-lg shadow border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pagos Pendientes</p>
+              <p className="text-2xl font-bold text-yellow-600">{pendingPayments}</p>
+              <p className="text-xs text-gray-500 mt-1">Próximos vencimientos</p>
+            </div>
+            <div className="p-3 bg-yellow-100 rounded-full">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Pagos Vencidos */}
+        <div className="bg-white p-6 rounded-lg shadow border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pagos Vencidos</p>
+              <p className="text-2xl font-bold text-red-600">{overduePayments}</p>
+              <p className="text-xs text-gray-500 mt-1">Requieren atención</p>
+            </div>
+            <div className="p-3 bg-red-100 rounded-full">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Pagos del Mes */}
+        <div className="bg-white p-6 rounded-lg shadow border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pagos del Mes</p>
+              <p className="text-2xl font-bold text-green-600">{paidPayments}</p>
+              <p className="text-xs text-gray-500 mt-1">Completados este mes</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-full">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity - ACTUALIZADO con componente de pagos rápido */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Pagos Recientes</h2>
@@ -155,6 +249,7 @@ export default async function AdminDashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
           <div className="grid grid-cols-2 gap-4">
+            {/* Acción: Nuevo Cliente */}
             <Link href="/admin/clients/new" className="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg border border-blue-200 transition">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg mr-3">
@@ -169,6 +264,7 @@ export default async function AdminDashboard() {
               </div>
             </Link>
 
+            {/* Acción: Nuevo Producto */}
             <Link href="/admin/products/new" className="bg-green-50 hover:bg-green-100 p-4 rounded-lg border border-green-200 transition">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg mr-3">
@@ -183,6 +279,7 @@ export default async function AdminDashboard() {
               </div>
             </Link>
 
+            {/* Acción: Mapa de Clientes */}
             <Link href="/admin/map" className="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg border border-purple-200 transition">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg mr-3">
@@ -197,7 +294,8 @@ export default async function AdminDashboard() {
               </div>
             </Link>
 
-            <Link href="/admin/payments" className="bg-yellow-50 hover:bg-yellow-100 p-4 rounded-lg border border-yellow-200 transition">
+            {/* Acción: REGISTRAR PAGO RÁPIDO - Ahora va a una página especial */}
+            <Link href="/admin/quick-payment" className="bg-yellow-50 hover:bg-yellow-100 p-4 rounded-lg border border-yellow-200 transition">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg mr-3">
                   <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +304,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Registrar Pago</p>
-                  <p className="text-xs text-gray-500">Ingresar transacción</p>
+                  <p className="text-xs text-gray-500">Rápido con modal</p>
                 </div>
               </div>
             </Link>

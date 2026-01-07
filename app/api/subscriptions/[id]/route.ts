@@ -53,3 +53,40 @@ export async function GET(
     );
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const subscription = await prisma.subscription.update({
+      where: { id: params.id },
+      data: {
+        clientId: body.clientId,
+        productId: body.productId,
+        priceMonthly: body.priceMonthly,
+        billingDay: body.billingDay,
+        status: body.status,
+        startsAt: new Date(body.startsAt),
+        endsAt: body.endsAt ? new Date(body.endsAt) : null,
+        paymentMethod: body.paymentMethod || null,
+        instanceUrl: body.instanceUrl || null,
+      },
+    });
+
+    return NextResponse.json(subscription);
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
