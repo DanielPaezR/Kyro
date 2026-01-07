@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <rect width="16" height="16" fill="#000000"/>
+  <!-- Silueta simple de cabeza de gato -->
+  <circle cx="8" cy="8" r="5" fill="#ffffff" opacity="0.9"/>
+  <!-- Orejas -->
+  <path d="M6,4 L8,6 L10,4 Z" fill="#ffffff"/>
+  <!-- Ojos -->
+  <circle cx="6.5" cy="8" r="1" fill="#000000"/>
+  <circle cx="9.5" cy="8" r="1" fill="#000000"/>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111111;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo elegante con gradiente -->
+  <rect width="200" height="80" fill="url(#gradient)" rx="10"/>
+  
+  <!-- Contorno de cabeza de gato -->
+  <path d="M40,40 Q50,20 70,40 Q50,60 40,40" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="2"/>
+  
+  <!-- Ojos de gato (elegantes) -->
+  <ellipse cx="48" cy="38" rx="4" ry="6" fill="#ffffff"/>
+  <ellipse cx="62" cy="38" rx="4" ry="6" fill="#ffffff"/>
+  <circle cx="48" cy="38" r="2" fill="#000000"/>
+  <circle cx="62" cy="38" r="2" fill="#000000"/>
+  
+  <!-- Pupilas verticales (estilo gato) -->
+  <rect x="47" y="37" width="2" height="3" fill="#000000"/>
+  <rect x="61" y="37" width="2" height="3" fill="#000000"/>
+  
+  <!-- Orejas -->
+  <path d="M45,25 L40,35 L50,35 Z" fill="#ffffff"/>
+  <path d="M65,25 L60,35 L70,35 Z" fill="#ffffff"/>
+  
+  <!-- Nombre KYRO -->
+  <text x="90" y="45" 
+        font-family="'Segoe UI', Arial, sans-serif" 
+        font-size="32" 
+        font-weight="700" 
+        fill="#ffffff"
+        letter-spacing="1">
+    KYRO
+  </text>
+  
+  <text x="90" y="65" 
+        font-family="'Segoe UI', Arial, sans-serif" 
+        font-size="12" 
+        fill="#cccccc"
+        letter-spacing="2">
+    ELEGANT SOLUTIONS
+  </text>
+</svg>
