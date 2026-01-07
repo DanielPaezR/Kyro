@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Crear el primer pago pendiente
+    // Crear el primer pago pendiente - CORREGIDO
     const today = new Date();
     const dueDate = new Date(today.getFullYear(), today.getMonth(), parseInt(body.billingDay));
     
@@ -94,14 +94,25 @@ export async function POST(request: NextRequest) {
       dueDate.setMonth(dueDate.getMonth() + 1);
     }
 
-    await prisma.payment.create({
-      data: {
+    // Verificar si ya existe un pago para esa fecha
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
         subscriptionId: subscription.id,
-        amount: parseFloat(body.priceMonthly),
         dueDate: dueDate,
-        period: new Date(today.getFullYear(), today.getMonth(), 1),
       },
     });
+
+    if (!existingPayment) {
+      await prisma.payment.create({
+        data: {
+          subscriptionId: subscription.id,
+          amount: parseFloat(body.priceMonthly),
+          dueDate: dueDate,
+          period: new Date(dueDate.getFullYear(), dueDate.getMonth(), 1),
+          status: 'pending',
+        },
+      });
+    }
 
     return NextResponse.json(subscription, { status: 201 });
   } catch (error) {
