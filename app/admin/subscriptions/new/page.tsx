@@ -1,16 +1,36 @@
-// app/admin/subscriptions/new/page.tsx
+// app/admin/subscriptions/new/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+interface Client {
+  id: string;
+  businessName: string;
+  contactName: string | null;
+  email: string;
+  status: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  basePriceMonthly: number;
+  slug: string;
+  demoUrl: string | null;
+}
 
 export default function NewSubscriptionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdFromUrl = searchParams.get('client');
+
   const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [products, setProducts] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [formData, setFormData] = useState({
-    clientId: '',
+    clientId: clientIdFromUrl || '',
     productId: '',
     priceMonthly: '',
     billingDay: '1',
@@ -32,30 +52,41 @@ export default function NewSubscriptionPage() {
         fetch('/api/products'),
       ]);
       
-      const clientsData = await clientsRes.json();
-      const productsData = await productsRes.json();
+      if (clientsRes.ok) {
+        const clientsData = await clientsRes.json();
+        setClients(clientsData);
+      } else {
+        console.error('Error fetching clients:', await clientsRes.text());
+      }
       
-      setClients(clientsData);
-      setProducts(productsData);
+      if (productsRes.ok) {
+        const productsData = await productsRes.json();
+        setProducts(productsData);
+      } else {
+        console.error('Error fetching products:', await productsRes.text());
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Si cambia el producto, cargar su precio base
     if (name === 'productId') {
-      const selectedProduct = products.find((p: any) => p.id === value);
-      if (selectedProduct && selectedProduct.basePriceMonthly) {
+      // Buscar el producto seleccionado
+      const selectedProduct = products.find(p => p.id === value);
+      if (selectedProduct) {
         setFormData(prev => ({
           ...prev,
+          productId: value,
           priceMonthly: selectedProduct.basePriceMonthly.toString(),
         }));
+        return;
       }
     }
+    
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +97,11 @@ export default function NewSubscriptionPage() {
       const response = await fetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          priceMonthly: parseFloat(formData.priceMonthly),
+          billingDay: parseInt(formData.billingDay),
+        }),
       });
 
       if (response.ok) {
@@ -74,7 +109,7 @@ export default function NewSubscriptionPage() {
         router.push('/admin/subscriptions');
       } else {
         const error = await response.json();
-        alert(`Error: ${error.message}`);
+        alert(`Error: ${error.error || 'Error desconocido'}`);
       }
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -93,6 +128,7 @@ export default function NewSubscriptionPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Cliente */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cliente *
@@ -105,7 +141,7 @@ export default function NewSubscriptionPage() {
               required
             >
               <option value="">Seleccionar cliente</option>
-              {clients.map((client: any) => (
+              {clients.map((client) => (
                 <option key={client.id} value={client.id}>
                   {client.businessName} - {client.email}
                 </option>
@@ -113,6 +149,7 @@ export default function NewSubscriptionPage() {
             </select>
           </div>
 
+          {/* Producto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Producto *
@@ -125,7 +162,7 @@ export default function NewSubscriptionPage() {
               required
             >
               <option value="">Seleccionar producto</option>
-              {products.map((product: any) => (
+              {products.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name} - ${product.basePriceMonthly}/mes
                 </option>
@@ -133,6 +170,7 @@ export default function NewSubscriptionPage() {
             </select>
           </div>
 
+          {/* Precio Mensual */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Precio Mensual (COP) *
@@ -147,8 +185,12 @@ export default function NewSubscriptionPage() {
               min="0"
               step="0.01"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Se auto-completa al seleccionar un producto
+            </p>
           </div>
 
+          {/* Día de Facturación */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Día de Facturación *
@@ -162,12 +204,14 @@ export default function NewSubscriptionPage() {
             >
               {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
                 <option key={day} value={day}>
-                  {day}
+                  {day} de cada mes
                 </option>
               ))}
+              <option value="31">Último día del mes</option>
             </select>
           </div>
 
+          {/* Fecha de Inicio */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Fecha de Inicio *
@@ -182,9 +226,10 @@ export default function NewSubscriptionPage() {
             />
           </div>
 
+          {/* Fecha de Fin */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Fin
+              Fecha de Fin (opcional)
             </label>
             <input
               type="date"
@@ -195,6 +240,7 @@ export default function NewSubscriptionPage() {
             />
           </div>
 
+          {/* Estado */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Estado
@@ -212,6 +258,7 @@ export default function NewSubscriptionPage() {
             </select>
           </div>
 
+          {/* Método de Pago */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Método de Pago
@@ -229,12 +276,14 @@ export default function NewSubscriptionPage() {
               <option value="cash">Efectivo</option>
               <option value="nequi">Nequi</option>
               <option value="daviplata">Daviplata</option>
+              <option value="paypal">PayPal</option>
             </select>
           </div>
 
+          {/* URL de Instancia */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL de Instancia
+              URL de Instancia (opcional)
             </label>
             <input
               type="url"
@@ -244,6 +293,9 @@ export default function NewSubscriptionPage() {
               placeholder="https://cliente.tuproducto.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Enlace a la instancia personalizada del cliente
+            </p>
           </div>
         </div>
 
@@ -258,9 +310,17 @@ export default function NewSubscriptionPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            {loading ? 'Creando...' : 'Crear Suscripción'}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creando...
+              </>
+            ) : 'Crear Suscripción'}
           </button>
         </div>
       </form>
