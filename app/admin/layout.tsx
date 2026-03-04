@@ -1,43 +1,27 @@
-// app/admin/layout.tsx - VERSIÓN CON LOGOUT FUNCIONAL
+// app/admin/layout.tsx - SOLO UI, SIN LÓGICA DE AUTENTICACIÓN
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session } = useSession();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/admin/login');
-    } else if (status === 'authenticated') {
-      setIsLoading(false);
-    }
-  }, [status, router]);
+  // Si estamos en login, mostrar solo el contenido
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  // Si no hay sesión, no mostrar nada (el middleware redirigirá)
+  if (!session) {
+    return null;
+  }
 
   const handleLogout = async () => {
-    try {
-      await signOut({ redirect: false });
-      router.push('/admin/login');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
+    await signOut({ redirect: true, callbackUrl: '/admin/login' });
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-100">
