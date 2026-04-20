@@ -22,11 +22,13 @@ export async function GET(
       where: { id: params.id },
       include: {
         subscriptions: {
-          include: {
-            product: true,
-            payments: {
-              orderBy: { dueDate: 'desc' },
-              take: 5
+          where: { status: 'active' },
+          select: {
+            id: true,
+            product: {
+              select: {
+                name: true
+              }
             }
           }
         }
