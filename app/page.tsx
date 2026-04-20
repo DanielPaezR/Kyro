@@ -233,6 +233,23 @@ export default function HomePage() {
                     </button>
                   );
                 }
+                
+                // ⚠️ FALTABA ESTO: retornar el JSX del producto
+                return (
+                  <div key={product.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-gray-600 transition">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
+                          <span className="text-2xl">{product.icon || "⚡"}</span>
+                        </div>
+                        <span className="text-2xl font-bold text-white">${product.price || 99}</span>
+                      </div>
+                      <h3 className="text-xl font-bold mb-2">{product.name}</h3>
+                      <p className="text-gray-400 mb-4">{product.description}</p>
+                      {demoButton}
+                    </div>
+                  </div>
+                );
               })}
             </div>
           )}
