@@ -44,8 +44,8 @@ export default function HomePage() {
           <div className="flex justify-between items-center">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="relative w-10 h-10">
-                <Image 
+              <div className="w-10 h-10">
+                <img 
                   src="/kyro-logo.png" 
                   alt="Kyro Logo" 
                   width={40} 
@@ -195,7 +195,10 @@ export default function HomePage() {
               {products.map((product) => {
                 let demoButton = null;
                 
-                if (product.name === "WABot") {
+                // Convertir el nombre a minúsculas para comparar sin importar mayúsculas
+                const productNameLower = product.name.toLowerCase();
+                
+                if (productNameLower === "wabot" || productNameLower.includes("wabot")) {
                   demoButton = (
                     <a 
                       href="https://wabot-directorio-production.up.railway.app/directorio"
@@ -209,7 +212,7 @@ export default function HomePage() {
                       </svg>
                     </a>
                   );
-                } else if (product.name === "SmartPath") {
+                } else if (productNameLower === "smartpath" || productNameLower.includes("smartpath")) {
                   demoButton = (
                     <a 
                       href="https://manejoinventarios-production.up.railway.app/login"
@@ -230,40 +233,6 @@ export default function HomePage() {
                     </button>
                   );
                 }
-
-                return (
-                  <div key={product.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-gray-600 transition group">
-                    <div className="p-8">
-                      <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center mb-6 group-hover:bg-gray-700 transition">
-                        {product.icon ? (
-                          <div className="text-xl">{product.icon}</div>
-                        ) : (
-                          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-xl font-bold mb-3">{product.name}</h3>
-                      <p className="text-gray-400 mb-6">{product.description}</p>
-                      
-                      {product.features && product.features.length > 0 && (
-                        <ul className="space-y-2 mb-6">
-                          {product.features.slice(0, 3).map((feature, index) => (
-                            <li key={index} className="flex items-center text-sm text-gray-300">
-                              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {demoButton}
-                    </div>
-                  </div>
-                );
               })}
             </div>
           )}
