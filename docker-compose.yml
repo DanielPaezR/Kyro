@@ -1,0 +1,19 @@
+# Levanta un PostgreSQL local para desarrollo:
+#   docker compose up -d
+# Luego usa esta cadena en tu .env.local:
+#   DATABASE_URL="postgresql://kyro:kyro@localhost:5432/kyro"
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kyro
+      POSTGRES_PASSWORD: kyro
+      POSTGRES_DB: kyro
+    ports:
+      - "5432:5432"
+    volumes:
+      - kyro_pgdata:/var/lib/postgresql/data
+
+volumes:
+  kyro_pgdata:
