@@ -12,8 +12,33 @@ interface Product {
   description: string;
   demoUrl: string | null;
   icon: string | null;
-  features: string | null;
+  features: unknown;
   basePriceMonthly?: number;
+}
+
+// `features` viene de un campo Json de Prisma que, según el script de seed
+// que lo haya poblado, puede llegar como array real, como texto con saltos
+// de línea, o como un string que contiene JSON serializado.
+function parseFeatures(features: unknown): string[] {
+  if (!features) return [];
+  if (Array.isArray(features)) {
+    return features.map((f) => String(f).trim()).filter(Boolean);
+  }
+  if (typeof features === 'string') {
+    const trimmed = features.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((f) => String(f).trim()).filter(Boolean);
+        }
+      } catch {
+        // no era JSON válido, se sigue tratando como texto plano
+      }
+    }
+    return trimmed.split('\n').map((f) => f.trim()).filter(Boolean);
+  }
+  return [];
 }
 
 interface CaseStudy {
@@ -28,14 +53,15 @@ interface CaseStudy {
 
 // Capturas reales por producto (tomadas navegando cada demo), mapeadas por slug.
 // Si un producto no tiene entradas aquí, su tarjeta se muestra sin galería.
+// Claves = slug real de cada producto en la base de datos de producción.
 const productScreenshots: Record<string, string[]> = {
-  wabot: [
+  'agendador-citas': [
     '/screenshots/wabot-perfil-negocio.png',
     '/screenshots/wabot-chat-menu.png',
     '/screenshots/wabot-seleccion-profesional.png',
     '/screenshots/wabot-cita-confirmada.png',
   ],
-  'erp-inventarios': ['/screenshots/inventario-login.jpg'],
+  'registro-ventas': ['/screenshots/inventario-login.jpg'],
 };
 
 // Casos de éxito: proyectos entregados a clientes reales, sin demo pública.
@@ -255,10 +281,7 @@ export default function HomePage() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => {
-                const featureList = (product.features || '')
-                  .split('\n')
-                  .map((f) => f.trim())
-                  .filter(Boolean);
+                const featureList = parseFeatures(product.features);
                 const screenshots = productScreenshots[product.slug] || [];
 
                 const demoButton = product.demoUrl ? (
