@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 // Tipo manual para los productos públicos
 type PublicProduct = {
   id: string;
+  slug: string;
   name: string;
   description: string | null;
   demoUrl: string | null;
@@ -22,6 +23,7 @@ export async function GET() {
       },
       select: {
         id: true,
+        slug: true,
         name: true,
         description: true,
         demoUrl: true,

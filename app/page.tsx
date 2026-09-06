@@ -7,13 +7,73 @@ import Link from 'next/link';
 
 interface Product {
   id: string;
+  slug: string;
   name: string;
   description: string;
   demoUrl: string | null;
   icon: string | null;
-  features: string[];
-  price?: number;
+  features: string | null;
+  basePriceMonthly?: number;
 }
+
+interface CaseStudy {
+  name: string;
+  client: string;
+  location: string;
+  category: string;
+  description: string;
+  scope: string[];
+  screenshots: string[];
+}
+
+// Capturas reales por producto (tomadas navegando cada demo), mapeadas por slug.
+// Si un producto no tiene entradas aquí, su tarjeta se muestra sin galería.
+const productScreenshots: Record<string, string[]> = {
+  wabot: [
+    '/screenshots/wabot-perfil-negocio.png',
+    '/screenshots/wabot-chat-menu.png',
+    '/screenshots/wabot-seleccion-profesional.png',
+    '/screenshots/wabot-cita-confirmada.png',
+  ],
+  'erp-inventarios': ['/screenshots/inventario-login.jpg'],
+};
+
+// Casos de éxito: proyectos entregados a clientes reales, sin demo pública.
+// Contenido curado a mano (no viene de la base de datos, a diferencia de "Productos").
+const caseStudies: CaseStudy[] = [
+  {
+    name: 'DECS',
+    client: 'Danijofy Electrical & Constructions N.V.',
+    location: 'Oranjestad, Aruba',
+    category: 'Construcción y servicios eléctricos',
+    description:
+      'Sistema integral de gestión empresarial construido a la medida: usuarios y roles, control horario, proyectos, nómina, inventario, flota, chat interno y reportes, todo en un solo lugar.',
+    scope: [
+      'Control horario y nómina',
+      'Gestión de proyectos y flota',
+      'Inventario y reportes',
+      'Chat interno del equipo',
+    ],
+    screenshots: ['/screenshots/decs-login.png'],
+  },
+  {
+    name: 'Concepción en el Mapa',
+    client: 'Municipio de Concepción, Antioquia',
+    location: 'Concepción, Antioquia',
+    category: 'Turismo y gobierno municipal',
+    description:
+      'Plataforma de gamificación turística con mapa interactivo en tiempo real, mascota/avatar, niveles y puntos de interés históricos geolocalizados con contenido desbloqueable a medida que el visitante se acerca. El panel administrativo incluye CRUDs de lugares y de guías turísticos, estadísticas de ingreso al aplicativo y encuestas.',
+    scope: [
+      'Mapa en tiempo real con gamificación',
+      'Puntos de interés con contenido histórico',
+      'Panel admin: lugares, guías, estadísticas y encuestas',
+    ],
+    screenshots: [
+      '/screenshots/ceem-turista-mapa.png',
+      '/screenshots/ceem-turista-punto-interes.png',
+    ],
+  },
+];
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -64,6 +124,7 @@ export default function HomePage() {
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-300 hover:text-white transition">Características</a>
               <a href="#products" className="text-gray-300 hover:text-white transition">Productos</a>
+              <a href="#case-studies" className="text-gray-300 hover:text-white transition">Casos de Éxito</a>
               <a href="#pricing" className="text-gray-300 hover:text-white transition">Precios</a>
               <a href="#contact" className="text-gray-300 hover:text-white transition">Contacto</a>
             </div>
@@ -194,48 +255,30 @@ export default function HomePage() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => {
-                let demoButton = null;
-                
-                // Convertir el nombre a minúsculas para comparar sin importar mayúsculas
-                const productNameLower = product.name.toLowerCase();
-                
-                if (productNameLower === "wabot" || productNameLower.includes("wabot")) {
-                  demoButton = (
-                    <a 
-                      href="https://wabot-directorio-production.up.railway.app/directorio"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-full py-3 bg-white text-black font-medium hover:bg-gray-200 transition"
-                    >
-                      Probar Demo
-                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </a>
-                  );
-                } else if (productNameLower === "smartpath" || productNameLower.includes("smartpath")) {
-                  demoButton = (
-                    <a 
-                      href="https://manejoinventarios-production.up.railway.app/login"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-full py-3 bg-white text-black font-medium hover:bg-gray-200 transition"
-                    >
-                      Probar Demo
-                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </a>
-                  );
-                } else {
-                  demoButton = (
-                    <button className="w-full py-3 border border-gray-700 text-gray-400 font-medium cursor-not-allowed">
-                      Demo Próximamente
-                    </button>
-                  );
-                }
-                
-                // ⚠️ FALTABA ESTO: retornar el JSX del producto
+                const featureList = (product.features || '')
+                  .split('\n')
+                  .map((f) => f.trim())
+                  .filter(Boolean);
+                const screenshots = productScreenshots[product.slug] || [];
+
+                const demoButton = product.demoUrl ? (
+                  <a
+                    href={product.demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-full py-3 bg-white text-black font-medium hover:bg-gray-200 transition"
+                  >
+                    Probar Demo
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </a>
+                ) : (
+                  <button className="w-full py-3 border border-gray-700 text-gray-400 font-medium cursor-not-allowed">
+                    Demo Próximamente
+                  </button>
+                );
+
                 return (
                   <div key={product.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-gray-600 transition">
                     <div className="p-6">
@@ -243,10 +286,34 @@ export default function HomePage() {
                         <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
                           <span className="text-2xl">{product.icon || "⚡"}</span>
                         </div>
-                        <span className="text-2xl font-bold text-white">${product.price || 99}</span>
+                        <span className="text-2xl font-bold text-white">${product.basePriceMonthly ?? 99}</span>
                       </div>
                       <h3 className="text-xl font-bold mb-2">{product.name}</h3>
                       <p className="text-gray-400 mb-4">{product.description}</p>
+                      {screenshots.length > 0 && (
+                        <div className="flex gap-2 overflow-x-auto mb-4 -mx-1 px-1">
+                          {screenshots.map((src, idx) => (
+                            <img
+                              key={idx}
+                              src={src}
+                              alt={`${product.name} - captura ${idx + 1}`}
+                              className="h-28 w-auto flex-shrink-0 rounded-lg border border-gray-800 object-cover"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {featureList.length > 0 && (
+                        <ul className="mb-4 space-y-1.5">
+                          {featureList.map((feature, idx) => (
+                            <li key={idx} className="flex items-start text-sm text-gray-300">
+                              <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                       {demoButton}
                     </div>
                   </div>
@@ -270,6 +337,58 @@ export default function HomePage() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Sección de Casos de Éxito */}
+      <section id="case-studies" className="py-20 px-6 bg-gray-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Casos de Éxito</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Proyectos a la medida que ya están en producción, resolviendo necesidades reales de nuestros clientes.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {caseStudies.map((study) => (
+              <div key={study.name} className="bg-black rounded-xl border border-gray-800 overflow-hidden hover:border-gray-600 transition">
+                {study.screenshots.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto p-4 pb-0">
+                    {study.screenshots.map((src, idx) => (
+                      <img
+                        key={idx}
+                        src={src}
+                        alt={`${study.name} - captura ${idx + 1}`}
+                        className="h-40 w-auto flex-shrink-0 rounded-lg border border-gray-800 object-cover"
+                      />
+                    ))}
+                  </div>
+                )}
+                <div className="p-8">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-gray-800 text-gray-300 rounded-full">
+                    {study.category}
+                  </span>
+                  <span className="text-xs text-gray-500">{study.location}</span>
+                </div>
+                <h3 className="text-2xl font-bold mb-1">{study.name}</h3>
+                <p className="text-sm text-gray-500 mb-4">{study.client}</p>
+                <p className="text-gray-400 mb-6">{study.description}</p>
+                <ul className="space-y-2">
+                  {study.scope.map((item, idx) => (
+                    <li key={idx} className="flex items-start text-sm text-gray-300">
+                      <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -498,6 +617,7 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li><a href="#features" className="text-gray-400 hover:text-white transition">Características</a></li>
                 <li><a href="#products" className="text-gray-400 hover:text-white transition">Productos</a></li>
+                <li><a href="#case-studies" className="text-gray-400 hover:text-white transition">Casos de Éxito</a></li>
                 <li><a href="#pricing" className="text-gray-400 hover:text-white transition">Precios</a></li>
                 <li><a href="#contact" className="text-gray-400 hover:text-white transition">Contacto</a></li>
               </ul>

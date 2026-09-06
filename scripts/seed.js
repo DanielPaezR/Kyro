@@ -27,25 +27,27 @@ async function main() {
         prisma.product.create({
           data: {
             companyId: company.id,
-            slug: 'agendador',
+            slug: 'wabot',
             name: 'Wabot',
-            description: 'Sistema de gestión de citas automatizado',
-            icon: 'Calendar',
+            description: 'Sistema de agendamiento de citas con bot automático, agenda del día por profesional y perfiles de negocio estilo red social.',
+            icon: '📅',
             isActive: true,
             basePriceMonthly: 0,
-            features: JSON.stringify([])
+            demoUrl: 'https://wabot-directorio-production.up.railway.app/negocio/1',
+            features: 'Bot de agendamiento automático\nAgenda del día por profesional\nPerfil de negocio estilo red social\nDirectorio multi-negocio\nRecordatorios automáticos'
           }
         }),
         prisma.product.create({
           data: {
             companyId: company.id,
-            slug: 'ventas',
-            name: 'Registrador de Ventas',
-            description: 'Sistema de control de inventario y ventas',
-            icon: 'ShoppingCart',
+            slug: 'erp-inventarios',
+            name: 'ERP Inventarios',
+            description: 'Plataforma de ventas, inventario, proveedores y pedidos multi-módulo y multi-negocio, con estadísticas por producto.',
+            icon: '📦',
             isActive: true,
             basePriceMonthly: 0,
-            features: JSON.stringify([])
+            demoUrl: 'https://manejoinventarios-production.up.railway.app/login',
+            features: 'Control de ventas e inventario\nGestión de proveedores y pedidos\nMódulo de menú (restaurantes/tiendas)\nEstadísticas por producto\nMulti-negocio'
           }
         })
       ])
