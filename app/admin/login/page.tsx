@@ -96,11 +96,6 @@ export default function LoginPage() {
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
           </div>
-
-          <div className="text-sm text-center text-gray-600">
-            <p>Credenciales por defecto:</p>
-            <p className="font-mono">admin@kyro.com / admin123</p>
-          </div>
         </form>
       </div>
     </div>
